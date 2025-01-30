@@ -1,12 +1,89 @@
 ---
 title: "White-Nose Syndrome and Pesticides"
+subtitle: "Investigating the connection between White-nose syndrome in bats and increases in pesticide use in agriculture."
 author: "Madi Calbert & Steven Mitchell"
-format: html
-editor: visual
+date: last-modified
+execute: 
+  eval: false
+  echo: true
+  warning: false
+  message: false
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: lux
+editor_options: 
+  chunk_output_type: console
 ---
-# This is a test
+![A bat suffering from White-nose syndrome, a disease caused by the fungus *Pseudomycans destructans* (commonly abbreviated as "Pd"). *Photo credit: Google Creative Commons*](bat-wns.jpeg)
+
+# Proposal
+
+We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS  is a time series of categorical presence/absence data. The pesticide use data is a time series of continuous concentration data. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
+
+
+# Setup & Data Exploration
 
 ```{r}
-
+library(here)
+library(tidyverse)
+library(sf)
+library(tmap)
+library(viridisLite)
 ```
+
+## *Pseudomycan destructans* and White-Nose Syndrome Detections by County
+```{r}
+# US state boundary data for use as a bounding box
+us <- read_sf(here("data", "tl_2024_state", "tl_2024_us_state.shp")) %>% 
+  filter(!STUSPS %in% c("MP", "GU", "AS", "AK", "HI", "PR", "VI"))
+
+# make a bounding box
+bbox <- st_bbox(us)
+
+# load US counties shapefile
+counties <- read_sf(here("data", "tl_2023_us_county", "tl_2023_us_county.shp")) %>% 
+  mutate(county = NAME)
+
+
+# load WNS status by county data
+wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
+
+# join them
+wns_counties <- left_join(counties, wns, by = "county") %>% 
+  mutate(determination = as.factor(determination))
+
+# Exploratory WNS-by-County Map
+map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
+  tm_polygons(col = "determination",
+              palette = mako(5),
+              title = "Pd/WNS Status")+
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar(position = c("left", "bottom"))+
+  tm_layout(title = "White-Nose Syndrome Occurrence by County",
+            title.position = c("left", "bottom"),
+            legend.position = c("right", "bottom"))
+
+tmap_save(map_wns_counties, here("outputs", "map_wns_counties.png"))
+```
+
+![](outputs/map_wns_counties.png)
+
+## Pesticide Use by County
+
+```{r}
+pesticides <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  group_by(COMPOUND)
+
+wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP")
+
+tm_shape(wns_pesticides)+
+  tm_polygons(col = "EPEST_HIGH_KG",
+              palette = mako(5),
+              title = "Pd/WNS Status")
+```
+
+
 
