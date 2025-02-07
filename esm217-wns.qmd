@@ -23,7 +23,11 @@ editor_options:
 We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS  is a time series of categorical presence/absence data. The pesticide use data is a time series of continuous concentration data. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
 
 
-# Setup & Data Exploration
+# Data Exploration
+
+## Setup
+
+### Libraries
 
 ```{r}
 library(here)
@@ -31,9 +35,11 @@ library(tidyverse)
 library(sf)
 library(tmap)
 library(viridisLite)
+library(biscale)
 ```
 
-## *Pseudomycan destructans* and White-Nose Syndrome Detections by County
+### Global Map Options
+
 ```{r}
 # US state boundary data for use as a bounding box
 us <- read_sf(here("data", "tl_2024_state", "tl_2024_us_state.shp")) %>% 
@@ -42,33 +48,45 @@ us <- read_sf(here("data", "tl_2024_state", "tl_2024_us_state.shp")) %>%
 # make a bounding box
 bbox <- st_bbox(us)
 
-# load US county shapefile
-county <- read_sf(here("data", "tl_2023_us_county", "tl_2023_us_county.shp")) %>% 
+# load US counties shapefile
+counties <- read_sf(here("data", "tl_2023_us_county", "tl_2023_us_county.shp")) %>% 
   mutate(county = NAME)
+
+# Define  color palettes
+wns_palette <- c("white", "blue")
+pesticide_palette <- c("white", "red")  
+```
+
+## *Pseudomycan destructans* and White-Nose Syndrome Detections by County
+
+
+```{r}
+
 
 
 # load WNS status by county data
 wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
 
 # join them
-wns_county <- left_join(county, wns, by = "county") %>% 
-  mutate(determination = as.factor(determination))
+wns_counties <- left_join(counties, wns, by = "county") %>% 
+  mutate(determination = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive")))
 
 # Exploratory WNS-by-County Map
-map_wns_county <- tm_shape(wns_county, bbox = bbox)+
+map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
   tm_polygons(col = "determination",
-              palette = mako(5),
-              title = "Pd/WNS Status")+
+              palette = wns_palette,
+              NA.col = "white",
+              title = "Pd / WNS Status")+
   tm_compass(position = c("left", "bottom"))+
   tm_scale_bar(position = c("left", "bottom"))+
   tm_layout(title = "White-Nose Syndrome Occurrence by County",
             title.position = c("left", "bottom"),
             legend.position = c("right", "bottom"))
 
-#tmap_save(map_wns_county, here("outputs", #"map_wns_county.png"))
+# tmap_save(map_wns_counties, here("outputs", "map_wns_counties.png"))
 ```
 
-![](outputs/map_wns_county.png)
+![](outputs/map_wns_counties.png)
 
 ## Pesticide Use by County
 
@@ -81,22 +99,51 @@ pesticides <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estima
   summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE))
 
 # join them
-pesticides_county <- left_join(county, pesticides, by = "COUNTYFP") 
+pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") 
 
-pest_test <- pesticides_county %>% 
-    filter(YEAR == 2017)
-
-tm_shape(pest_test, bbox = bbox)+
+map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
   tm_polygons(col = "total_pesticides_kg",
-              palette = mako(100),
-              title = "Total Pesticide Use (Kg)")+
+              palette = pesticide_palette,
+              breaks = quantile(pesticides_counties$total_pesticides_kg,
+                                probs = seq(0, 1, by = 0.10), na.rm = TRUE),
+              title = "Total Pesticide Use (Kg)",
+              NA.col = "white",
+              labels = c("0 - 62 K", "62 - 518 K", "518 K - 1.3 mil", "1.3 - 1.7 mil", 
+                         "1.7 - 2 mil", "2 - 2.2 mil", "2.2 - 2.4 mil", 
+                         "2.4 - 2.6 mil", "2.6 - 3.1 mil","3.1 - 5.9 mil"))+
   tm_compass(position = c("left", "bottom"))+
   tm_scale_bar(position = c("left", "bottom"))+
   tm_layout(title = "Pesticide Use by County",
             title.position = c("left", "bottom"),
             legend.position = c("right", "bottom"))
 
+# tmap_save(map_pesticides_counties, here("outputs", "map_pesticides_counties.png"))
+```
+
+![](outputs/map_pesticides_counties.png)
+
+##  WNS Status & Pesticide Use by County
+
+```{r}
+wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
+  drop_na(determination, total_pesticides_kg)
+
+wns_pesticides_bivariate <- bi_class(wns_pesticides,
+                 x = "determination", 
+                 y = "total_pesticides_kg", 
+                 style = "quantile", dim = 4)
+
+bivariate_pallete <- "DkBlue2"
+
+map_wns_pesticides <- tm_shape(counties, bbox = bbox)+
+  tm_polygons(col = "white")+
+  tm_shape(wns_pesticides_bivariate)+
+  tm_polygons(col = "bi_class",
+              pallette = bivariate_pallete)
+
+tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
+
 ```
 
 
-
+![](outputs/map_wns_pesticides.png)
