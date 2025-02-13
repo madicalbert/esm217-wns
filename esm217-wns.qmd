@@ -127,55 +127,43 @@ map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
 
 ```{r}
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
-  drop_na(determination, total_pesticides_kg)
+  drop_na(total_pesticides_kg) %>% 
+  mutate(wns_status = ifelse(is.na(determination), 0, as.numeric(determination)))
+
+write_sf(wns_pesticides, here("data", "wns_pesticides.shp"))
 
 wns_pesticides_bivariate <- bi_class(wns_pesticides,
-                 x = "determination", 
-                 y = "total_pesticides_kg", 
+                 x = wns_status, 
+                 y = total_pesticides_kg, 
                  style = "quantile", dim = 4)
-
-bi_pallet <- c("Blue", "Pink")
 ```
 
 
+
+
+
 ```{r}
-ggplot()+
-  theme_void(base_size = 14)+
-  geom_sf(data = wns_pesticides_bivariate, aes(fill = bi_class), 
-          color = NA , show.legend = FALSE)+
-  bi_scale_fill(aes(pal = "DkBlue2", dim = 4, flip_axes = FALSE, rotate_pal = FALSE))+
-  geom_sf(counties, aes(fill = NA), color = "black", linewidth = 0.20)
-
-
 map_wns_pesticides <- tm_shape(counties, bbox = bbox)+
   tm_polygons(col = "white")+
-  tm_shape(wns_pesticides_bivariate)+
-  tm_polygons(tm_vars(c("determination", "total_pesticides_kg"), 
+  tm_shape(wns_pesticides)+
+  tm_polygons(tm_vars(c("wns_status", "total_pesticides_kg"), 
                       multivariate = TRUE),
               fill.scale = tm_scale("DkBlue2"))
-
-tm_shape(wns_pesticides_bivariate, bbox = bbox)+
-  tm_polygons(bi_class, fill.scale = tm_scale("DkBlue2"))
+map_wns_pesticides
 
 tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
-
-```
-
-```{r}
-
-# Chat GPT doesnt work
-tm_shape(counties, bbox = bbox) +
-  tm_polygons(col = "white") +  # Base layer with white fill for counties
-  tm_shape(wns_pesticides_bivariate) +
-  tm_polygons(
-    aes(fill = bi_class),  # Map the bivariate classification to fill color
-    palette = bi_pallet,    # Set the custom palette
-    fill = "bi_class",      # Define the variable for fill as bi_class
-    fill.scale = tm_scale("quantile")  # Apply quantile scale for color breaks
-  ) +
-  tm_layout(legend.position = c("left", "bottom"))
-
 ```
 
 
 ![](outputs/map_wns_pesticides.png)
+
+
+```{r}
+#ggplot()+
+#  theme_void(base_size = 14)+
+#  geom_sf(data = wns_pesticides_bivariate, mapping = aes(fill = bi_class), 
+#          color = NA , show.legend = FALSE)+
+#  bi_scale_fill(pal = "DkBlue2", dim = 4)+
+#  geom_sf(counties, aes(fill = NA), color = "black", linewidth = 0.20)+
+#  bi_theme()
+```
