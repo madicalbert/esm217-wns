@@ -36,6 +36,7 @@ library(sf)
 library(tmap)
 library(viridisLite)
 library(biscale)
+
 ```
 
 ### Global Map Options
@@ -69,7 +70,7 @@ wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
 
 # join them
 wns_counties <- left_join(counties, wns, by = "county") %>% 
-  mutate(determination = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive")))
+  mutate(determination = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE))
 
 # Exploratory WNS-by-County Map
 map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
@@ -133,15 +134,46 @@ wns_pesticides_bivariate <- bi_class(wns_pesticides,
                  y = "total_pesticides_kg", 
                  style = "quantile", dim = 4)
 
-bivariate_pallete <- "DkBlue2"
+bi_pallet <- c("Blue", "Pink")
+```
+
+
+```{r}
+ggplot()+
+  theme_void(base_size = 14)+
+  geom_sf(data = wns_pesticides_bivariate, aes(fill = bi_class), 
+          color = NA , show.legend = FALSE)+
+  bi_scale_fill(aes(pal = "DkBlue2", dim = 4, flip_axes = FALSE, rotate_pal = FALSE))+
+  geom_sf(counties, aes(fill = NA), color = "black", linewidth = 0.20)
+
 
 map_wns_pesticides <- tm_shape(counties, bbox = bbox)+
   tm_polygons(col = "white")+
   tm_shape(wns_pesticides_bivariate)+
-  tm_polygons(col = "bi_class",
-              pallette = bivariate_pallete)
+  tm_polygons(tm_vars(c("determination", "total_pesticides_kg"), 
+                      multivariate = TRUE),
+              fill.scale = tm_scale("DkBlue2"))
+
+tm_shape(wns_pesticides_bivariate, bbox = bbox)+
+  tm_polygons(bi_class, fill.scale = tm_scale("DkBlue2"))
 
 tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
+
+```
+
+```{r}
+
+# Chat GPT doesnt work
+tm_shape(counties, bbox = bbox) +
+  tm_polygons(col = "white") +  # Base layer with white fill for counties
+  tm_shape(wns_pesticides_bivariate) +
+  tm_polygons(
+    aes(fill = bi_class),  # Map the bivariate classification to fill color
+    palette = bi_pallet,    # Set the custom palette
+    fill = "bi_class",      # Define the variable for fill as bi_class
+    fill.scale = tm_scale("quantile")  # Apply quantile scale for color breaks
+  ) +
+  tm_layout(legend.position = c("left", "bottom"))
 
 ```
 
