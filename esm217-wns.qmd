@@ -4,7 +4,7 @@ subtitle: "Investigating the connection between White-nose syndrome in bats and 
 author: "Madi Calbert & Steven Mitchell"
 date: last-modified
 execute: 
-  eval: false
+  eval: true
   echo: true
   warning: false
   message: false
@@ -70,7 +70,7 @@ wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
 
 # join them
 wns_counties <- left_join(counties, wns, by = "county") %>% 
-  mutate(determination = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE))
+  mutate(wns_status = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE))
 
 # Exploratory WNS-by-County Map
 map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
@@ -97,13 +97,16 @@ pesticides <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estima
   mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
                                 EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
   group_by(COUNTYFP, YEAR) %>% 
-  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE))
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE))  
 
 # join them
-pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") 
+pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") %>% 
+  mutate(pesticides_per_acre = total_pesticides_kg/ALAND) %>% 
+  mutate(pesticides_log = log(pesticides_per_acre))
+
 
 map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
-  tm_polygons(col = "total_pesticides_kg",
+  tm_polygons(col = "pesticides_log",
               palette = pesticide_palette,
               breaks = quantile(pesticides_counties$total_pesticides_kg,
                                 probs = seq(0, 1, by = 0.10), na.rm = TRUE),
@@ -128,21 +131,33 @@ map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
 ```{r}
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
   drop_na(total_pesticides_kg) %>% 
-  mutate(wns_status = ifelse(is.na(determination), 0, as.numeric(determination)))
+  drop_na(wns_status)  %>% 
+  mutate(pesticides_per_acre = total_pesticides_kg/ALAND)
 
 write_sf(wns_pesticides, here("data", "wns_pesticides.shp"))
 
-wns_pesticides_bivariate <- bi_class(wns_pesticides,
-                 x = wns_status, 
-                 y = total_pesticides_kg, 
-                 style = "quantile", dim = 4)
+chart_wns_pesticides <- ggplot(data = wns_pesticides, aes(x = wns_status, y = pesticides_per_acre))+
+  geom_col(col = "purple")+
+  labs(x = "White-Nose Syndrome Status",
+       y = "Pesticide Use (Kg per Meter^2)",
+       title = "Pesticide Use by WNS Status")+
+  theme_bw()
+
+ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
+       width = 6, height = 3)
 ```
 
-
-
-
+![](outputs/chart_wns_pesticides.png)
 
 ```{r}
+wns_pest_lm <- glm(pesticides_per_acre ~ wns_status, data = wns_pesticides, family = "gaussian")
+
+print(summary(wns_pest_lm))
+```
+
+```{r}
+#| eval: false
+
 map_wns_pesticides <- tm_shape(counties, bbox = bbox)+
   tm_polygons(col = "white")+
   tm_shape(wns_pesticides)+
@@ -158,12 +173,6 @@ tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
 ![](outputs/map_wns_pesticides.png)
 
 
-```{r}
-#ggplot()+
-#  theme_void(base_size = 14)+
-#  geom_sf(data = wns_pesticides_bivariate, mapping = aes(fill = bi_class), 
-#          color = NA , show.legend = FALSE)+
-#  bi_scale_fill(pal = "DkBlue2", dim = 4)+
-#  geom_sf(counties, aes(fill = NA), color = "black", linewidth = 0.20)+
-#  bi_theme()
-```
+
+
+![](outputs/GIS_outputs/wns_pesticides_01.png)
