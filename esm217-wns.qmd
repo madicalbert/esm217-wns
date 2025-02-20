@@ -16,12 +16,12 @@ format:
 editor_options: 
   chunk_output_type: console
 ---
+
 ![A bat suffering from White-nose syndrome, a disease caused by the fungus *Pseudomycans destructans* (commonly abbreviated as "Pd"). *Photo credit: Google Creative Commons*](bat-wns.jpeg)
 
 # Proposal
 
-We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS  is a time series of categorical presence/absence data. The pesticide use data is a time series of continuous concentration data. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
-
+We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS is a time series of categorical presence/absence data. The pesticide use data is a time series of continuous concentration data. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
 
 # Data Exploration
 
@@ -59,7 +59,6 @@ pesticide_palette <- c("white", "red")
 ```
 
 ## *Pseudomycan destructans* and White-Nose Syndrome Detections by County
-
 
 ```{r}
 
@@ -126,7 +125,7 @@ map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
 
 ![](outputs/map_pesticides_counties.png)
 
-##  WNS Status & Pesticide Use by County
+## WNS Status & Pesticide Use by County
 
 ```{r}
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
@@ -169,10 +168,6 @@ map_wns_pesticides
 tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
 ```
 
-
 ![](outputs/map_wns_pesticides.png)
-
-
-
 
 ![](outputs/GIS_outputs/wns_pesticides_01.png)
