@@ -21,27 +21,42 @@ editor_options:
 
 # Proposal
 
-We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS is a time series of categorical presence/absence data. The pesticide use data is a time series of continuous concentration data. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
+We will investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We will map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS is a time series of categorical presence/absence data of the disease and fungus. The pesticide use data is a time series of continuous concentration data by US counties. We will run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. Time allowing, we will take it a step further by incorporating public health data and run a linear regression between pesticide use and negative health outcomes.
 
-# Data Exploration
+# Background
 
-## Setup
+-   Importance of bats as biological pest control
 
-### Libraries
+-   Emergence of WNS and spread across US
+
+-   Effects of declining bat populations on agriculture/economics and increased pesticide use
+
+-   Impacts of increased pesticide use on human health
+
+# Methods
+
+-   Data visualization of pesticide use and WNS status by county
+
+-   Linear Regression to determine relationship between WNS status and pesticide use
+
+-   Bivariate map of pesticide use and WNS status
+
+# Results
+
+### Data Exploration
 
 ```{r}
+#Load libraries
 library(here)
 library(tidyverse)
 library(sf)
 library(tmap)
 library(viridisLite)
 library(biscale)
-
 ```
 
-### Global Map Options
-
 ```{r}
+# Global Map Options
 # US state boundary data for use as a bounding box
 us <- read_sf(here("data", "tl_2024_state", "tl_2024_us_state.shp")) %>% 
   filter(!STUSPS %in% c("MP", "GU", "AS", "AK", "HI", "PR", "VI"))
@@ -58,7 +73,7 @@ wns_palette <- c("white", "blue")
 pesticide_palette <- c("white", "red")  
 ```
 
-## *Pseudomycan destructans* and White-Nose Syndrome Detections by County
+#### White-Nose Syndrome and *Pseudomycan destructans* Detections by County
 
 ```{r}
 
@@ -86,9 +101,9 @@ map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
 # tmap_save(map_wns_counties, here("outputs", "map_wns_counties.png"))
 ```
 
-![](outputs/map_wns_counties.png)
+![*Pseudomycan destructans* and White-Nose Syndrome Detections by County. Data Source: [U.S. Geological Survey (USGS) National Wildlife Health Center](https://www.usgs.gov/centers/nwhc/science/white-nose-syndrome)](outputs/map_wns_counties.png)
 
-## Pesticide Use by County
+#### Pesticide Use by County
 
 ```{r}
 pesticides <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
@@ -123,9 +138,9 @@ map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
 # tmap_save(map_pesticides_counties, here("outputs", "map_pesticides_counties.png"))
 ```
 
-![](outputs/map_pesticides_counties.png)
+![Pesticide use (kilograms of pesticide) by County. Data Source: [U.S. Geological Survey (USGS) Science-Base Catalog](https://www.sciencebase.gov/catalog/item/6081a924d34e8564d68661a1)](outputs/map_pesticides_counties.png)
 
-## WNS Status & Pesticide Use by County
+#### WNS Status & Pesticide Use by County
 
 ```{r}
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
@@ -146,13 +161,17 @@ ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
        width = 6, height = 3)
 ```
 
-![](outputs/chart_wns_pesticides.png)
+![White-Nose Syndrome Status and Pesticide use (kg/m\^2). Detections of WNS are highest in counties with the most pesticide use.](outputs/chart_wns_pesticides.png)
+
+### Linear Regression
 
 ```{r}
 wns_pest_lm <- glm(pesticides_per_acre ~ wns_status, data = wns_pesticides, family = "gaussian")
 
 print(summary(wns_pest_lm))
 ```
+
+### Bivariate Map
 
 ```{r}
 #| eval: false
@@ -170,4 +189,22 @@ tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
 
 ![](outputs/map_wns_pesticides.png)
 
-![](outputs/GIS_outputs/wns_pesticides_01.png)
+![White-Nose Syndrome Status and Pesticide use by county across the US.](outputs/GIS_outputs/wns_pesticides_01.png)
+
+# Discussion
+
+-   Impacts of WNS spread on agriculture and human health
+
+-   Planetary health solution of biological pest control rather than increased pesticide use
+
+# Works Cited
+
+Frank, E. G. (2024). The economic impacts of ecosystem disruptions: Costs from substituting biological pest control. Science, 385(6713), eadg0344.
+
+Quarles, W. (2013). Bats, pesticides and white nose syndrome. IPM Practitioner, 33(9/10), 1-6.
+
+Verant, M., & Bernard, R. F. (2023). White‐nose syndrome in bats: Conservation, management, and context‐dependent decision making. Wildlife disease and health in conservation, 273-291.
+
+Wieben, C.M., 2021, Preliminary estimated annual agricultural pesticide use for counties of the conterminous United States, 2019: U.S. Geological Survey data release, https://doi.org/10.5066/P9EDTHQL.
+
+USGS. Where is White-nose Syndrome Now? Preliminary White-nose Syndrome Occurence by County/District of the conterminous United States. Updated December 2024.
