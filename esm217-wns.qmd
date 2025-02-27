@@ -53,6 +53,9 @@ library(sf)
 library(tmap)
 library(viridisLite)
 library(biscale)
+library(lubridate)
+library(janitor)
+library(readr)
 ```
 
 ```{r}
@@ -76,15 +79,14 @@ pesticide_palette <- c("white", "red")
 #### White-Nose Syndrome and *Pseudomycan destructans* Detections by County
 
 ```{r}
-
-
-
 # load WNS status by county data
 wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
 
 # join them
 wns_counties <- left_join(counties, wns, by = "county") %>% 
-  mutate(wns_status = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE))
+  mutate(wns_status = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE)) %>% 
+  mutate(date = mdy(release_date)) %>% 
+  filter(date <= as.Date("2020-01-01"))
 
 # Exploratory WNS-by-County Map
 map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
@@ -106,14 +108,32 @@ map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
 #### Pesticide Use by County
 
 ```{r}
-pesticides <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
+pesticides_2013_2017 <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
   mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
   mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
                                 EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
   group_by(COUNTYFP, YEAR) %>% 
   summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE))  
 
-# join them
+pesticides_2018 <- read_csv(here("data", "2018_pesticides", "EPest_county_estimates_2018.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
+                                EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
+  group_by(COUNTYFP, YEAR) %>% 
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE)) 
+
+pesticides_2019 <- read_csv(here("data", "2019_pesticides", "EPest_county_estimates_2019.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
+                                EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
+  group_by(COUNTYFP, YEAR) %>% 
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE)) 
+
+# join pesticides data
+pesticides <- bind_rows(pesticides_2013_2017, pesticides_2018, pesticides_2019)
+
+
+# join to counties shp
 pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") %>% 
   mutate(pesticides_per_acre = total_pesticides_kg/ALAND) %>% 
   mutate(pesticides_log = log(pesticides_per_acre))
@@ -166,7 +186,7 @@ ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
 ### Linear Regression
 
 ```{r}
-wns_pest_lm <- glm(pesticides_per_acre ~ wns_status, data = wns_pesticides, family = "gaussian")
+wns_pest_lm <- glm(pesticides_per_acre ~ wns_status, data = wns_pesticides)
 
 print(summary(wns_pest_lm))
 ```
@@ -190,6 +210,15 @@ tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
 ![](outputs/map_wns_pesticides.png)
 
 ![White-Nose Syndrome Status and Pesticide use by county across the US.](outputs/GIS_outputs/wns_pesticides_01.png)
+
+# Infant Mortality
+
+```{r}
+infant_mortality <- read_csv(here("data", "infant_mortality", "infant_mortality.csv")) %>% 
+  clean_names() %>% 
+  mutate(death_rate = parse_number(death_rate))
+```
+
 
 # Discussion
 
