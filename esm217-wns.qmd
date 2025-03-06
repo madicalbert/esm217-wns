@@ -135,8 +135,8 @@ pesticides <- bind_rows(pesticides_2013_2017, pesticides_2018, pesticides_2019)
 
 # join to counties shp
 pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") %>% 
-  mutate(pesticides_per_acre = total_pesticides_kg/ALAND) %>% 
-  mutate(pesticides_log = log(pesticides_per_acre))
+  mutate(pesticides_per_sqm = total_pesticides_kg/ALAND) %>% 
+  mutate(pesticides_log = log(pesticides_per_sqm))
 
 
 map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
@@ -166,11 +166,16 @@ map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
   drop_na(total_pesticides_kg) %>% 
   drop_na(wns_status)  %>% 
-  mutate(pesticides_per_acre = total_pesticides_kg/ALAND)
+  mutate(pesticides_per_sqm = total_pesticides_kg/ALAND) %>% 
+  mutate(wns_numeric = as.numeric(wns_status)) %>% 
+  mutate(pesticides_quantile = cut(pesticides_per_sqm, 
+                                  breaks = quantile(pesticides_per_sqm, 
+                                                    probs = seq(0, 1, by = 0.25), na.rm = TRUE),
+                                  labels = c("Low", "Medium", "High", "Very High")))
 
 write_sf(wns_pesticides, here("data", "wns_pesticides.shp"))
 
-chart_wns_pesticides <- ggplot(data = wns_pesticides, aes(x = wns_status, y = pesticides_per_acre))+
+chart_wns_pesticides <- ggplot(data = wns_pesticides, aes(x = wns_status, y = pesticides_per_sqm))+
   geom_col(col = "purple")+
   labs(x = "White-Nose Syndrome Status",
        y = "Pesticide Use (Kg per Meter^2)",
@@ -186,7 +191,7 @@ ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
 ### Linear Regression
 
 ```{r}
-wns_pest_lm <- glm(pesticides_per_acre ~ wns_status, data = wns_pesticides)
+wns_pest_lm <- glm(pesticides_per_sqm ~ wns_status, data = wns_pesticides)
 
 print(summary(wns_pest_lm))
 ```
@@ -199,9 +204,14 @@ print(summary(wns_pest_lm))
 map_wns_pesticides <- tm_shape(counties, bbox = bbox)+
   tm_polygons(col = "white")+
   tm_shape(wns_pesticides)+
-  tm_polygons(tm_vars(c("wns_status", "total_pesticides_kg"), 
+  tm_polygons(tm_vars(c("wns_status", "pesticides_quantile"), 
                       multivariate = TRUE),
-              fill.scale = tm_scale("DkBlue2"))
+              fill.scale = tm_scale(c("blue", "magenta")))+
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar(position = c("left", "bottom"))+
+  tm_layout(title = "Pesticide Use and WNS Status by County",
+            title.position = c("left", "bottom"),
+            legend.outside = TRUE)
 map_wns_pesticides
 
 tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
@@ -214,9 +224,27 @@ tmap_save(map_wns_pesticides, here("outputs", "map_wns_pesticides.png"))
 # Infant Mortality
 
 ```{r}
-infant_mortality <- read_csv(here("data", "infant_mortality", "infant_mortality.csv")) %>% 
-  clean_names() %>% 
-  mutate(death_rate = parse_number(death_rate))
+infant_mortality <- read_csv(here("data", "infant_mortality", "infant_mortality.csv")) %>%   clean_names() %>% 
+  mutate(death_rate = parse_number(death_rate)) %>% 
+  mutate(GEOID = as.character(county_code)) 
+
+wns_pest_infmort <- left_join(wns_pesticides, infant_mortality, by = "GEOID") %>% 
+  drop_na(total_pesticides_kg) %>% 
+  drop_na(wns_status)  %>% 
+  mutate(pesticides_per_sqm = total_pesticides_kg/ALAND) %>% 
+  drop_na(death_rate)
+
+tm_shape(counties, bbox = bbox)+
+  tm_polygons(col = "white")+
+  tm_shape(wns_pest_infmort)+
+  tm_polygons(fill = "death_rate",
+              palette = "viridis",
+              title = "Infant Mortality Rate")+
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar(position = c("left", "bottom"))+
+  tm_layout(title = "Infant Mortality Rate by County",
+            title.position = c("left", "bottom"),
+            legend.position = c("right", "bottom"))
 ```
 
 
