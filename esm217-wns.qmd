@@ -247,7 +247,6 @@ tm_shape(counties, bbox = bbox)+
             legend.position = c("right", "bottom"))
 ```
 
-
 # Discussion
 
 -   Impacts of WNS spread on agriculture and human health
