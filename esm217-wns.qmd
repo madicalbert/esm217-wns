@@ -35,13 +35,17 @@ We will investigate the impacts to crop production from an infectious fungal dis
 
 # Methods
 
--   Data visualization of pesticide use and WNS status by county
+To investigate the relationship between White-Nose Syndrome (WNS) in bats and pesticide use in agriculture, we compiled and processed datasets from the U.S. Geological Survey (USGS). WNS occurrence data was obtained at the county level, categorizing locations based on the presence of *Pseudogymnoascus destructans* (Pd) and confirmed WNS cases. Pesticide use data, available as continuous concentration estimates, was aggregated by county and standardized by land area to facilitate comparisons. These datasets were integrated with U.S. county shapefiles to ensure spatial consistency for mapping and analysis.
 
--   Linear Regression to determine relationship between WNS status and pesticide use
+Data visualization played a key role in our analysis. We created a bivariate map to identify regions where both factors co-occur. This map provided a clear spatial representation of potential associations between WNS prevalence and increased pesticide application.
 
--   Bivariate map of pesticide use and WNS status
+To quantify this relationship, we conducted a linear regression analysis, treating WNS status as the independent variable and pesticide use per square meter as the dependent variable. This allowed us to assess whether counties with higher WNS detections also exhibited increased pesticide use. Additionally, to explore potential broader ecological and public health impacts, we incorporated infant mortality data and examined its correlation with pesticide exposure.
+
+Through this methodological approach, we aimed to provide a comprehensive assessment of the link between WNS-related bat population declines, increased pesticide reliance, and potential consequences for both agriculture and public health.
 
 # Results
+
+
 
 ### Data Exploration
 

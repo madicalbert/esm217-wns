@@ -1,21 +1,266 @@
 ---
 title: "madi_map"
 format: html
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  message: false
 ---
 
 ```{r}
-map_wns_pesticides <- tm_shape(counties, bbox = bbox) +
-  tm_polygons(col = "white") +
-  tm_shape(wns_pesticides) +
-  tm_polygons(tm_vars(c("wns_status", "pesticides_quantile"), 
-                      multivariate = TRUE),
-              fill.scale = tm_scale(c("lightblue", "darkred"))) +
-  tm_compass(position = c("right", "top"), size = 2) +
-  tm_scalebar(position = c("left", "bottom")) +  
-  tm_title("Pesticide Use and WNS Status by County", size = 1.2) +  
-  tm_layout(legend.outside = TRUE, legend.outside.position = "right")  
+# Load libraries
+library(tidyverse)
+library(sf)
+library(terra)
+library(biscale)
 
-map_wns_pesticides
+#Load libraries
+library(here)
+library(tidyverse)
+library(sf)
+library(tmap)
+library(viridisLite)
+library(biscale)
+library(lubridate)
+library(janitor)
+library(readr)
 
+library(ggplot2)
+```
+
+```{r}
+# Global Map Options
+# US state boundary data for use as a bounding box
+us <- read_sf(here("data", "tl_2024_state", "tl_2024_us_state.shp")) %>% 
+  filter(!STUSPS %in% c("MP", "GU", "AS", "AK", "HI", "PR", "VI"))
+
+# make a bounding box
+bbox <- st_bbox(us)
+
+# load US counties shapefile
+counties <- read_sf(here("data", "tl_2023_us_county", "tl_2023_us_county.shp")) %>% 
+  mutate(county = NAME)
+
+# Define  color palettes
+wns_palette <- c("white", "blue")
+pesticide_palette <- c("white", "red")  
+```
+
+#### White-Nose Syndrome and *Pseudomycan destructans* Detections by County
+
+```{r}
+# load WNS status by county data
+wns <- read_sf(here("data", "wns_county_status", "wns_county_status.csv"))
+
+# join them
+wns_counties <- left_join(counties, wns, by = "county") %>% 
+  mutate(wns_status = factor(determination, levels = c("Pd Presumed", "WNS Suspect", "Pd Positive", "WNS Positive"), ordered = TRUE)) %>% 
+  mutate(date = mdy(release_date)) %>% 
+  filter(date <= as.Date("2020-01-01"))
+
+# Exploratory WNS-by-County Map
+map_wns_counties <- tm_shape(wns_counties, bbox = bbox)+
+  tm_polygons(col = "determination",
+              palette = wns_palette,
+              NA.col = "white",
+              title = "Pd / WNS Status")+
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar(position = c("left", "bottom"))+
+  tm_layout(title = "White-Nose Syndrome Occurrence by County",
+            title.position = c("left", "bottom"),
+            legend.position = c("right", "bottom"))
+
+# tmap_save(map_wns_counties, here("outputs", "map_wns_counties.png"))
+```
+
+![*Pseudomycan destructans* and White-Nose Syndrome Detections by County. Data Source: [U.S. Geological Survey (USGS) National Wildlife Health Center](https://www.usgs.gov/centers/nwhc/science/white-nose-syndrome)](outputs/map_wns_counties.png)
+
+#### Pesticide Use by County
+
+```{r}
+pesticides_2013_2017 <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
+                                EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
+  group_by(COUNTYFP, YEAR) %>% 
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE))  
+
+pesticides_2018 <- read_csv(here("data", "2018_pesticides", "EPest_county_estimates_2018.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
+                                EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
+  group_by(COUNTYFP, YEAR) %>% 
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE)) 
+
+pesticides_2019 <- read_csv(here("data", "2019_pesticides", "EPest_county_estimates_2019.csv")) %>% 
+  mutate(COUNTYFP = as.character(COUNTY_FIPS_CODE)) %>% 
+  mutate(concentration = ifelse(is.na(EPEST_HIGH_KG), 
+                                EPEST_LOW_KG, EPEST_HIGH_KG)) %>% 
+  group_by(COUNTYFP, YEAR) %>% 
+  summarise(total_pesticides_kg = sum(concentration, na.rm = TRUE)) 
+
+# join pesticides data
+pesticides <- bind_rows(pesticides_2013_2017, pesticides_2018, pesticides_2019)
+
+
+# join to counties shp
+pesticides_counties <- left_join(counties, pesticides, by = "COUNTYFP") %>% 
+  mutate(pesticides_per_sqm = total_pesticides_kg/ALAND) %>% 
+  mutate(pesticides_log = log(pesticides_per_sqm))
+
+
+map_pesticides_counties <- tm_shape(pesticides_counties, bbox = bbox)+
+  tm_polygons(col = "pesticides_log",
+              palette = pesticide_palette,
+              breaks = quantile(pesticides_counties$total_pesticides_kg,
+                                probs = seq(0, 1, by = 0.10), na.rm = TRUE),
+              title = "Total Pesticide Use (Kg)",
+              NA.col = "white",
+              labels = c("0 - 62 K", "62 - 518 K", "518 K - 1.3 mil", "1.3 - 1.7 mil", 
+                         "1.7 - 2 mil", "2 - 2.2 mil", "2.2 - 2.4 mil", 
+                         "2.4 - 2.6 mil", "2.6 - 3.1 mil","3.1 - 5.9 mil"))+
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar(position = c("left", "bottom"))+
+  tm_layout(title = "Pesticide Use by County",
+            title.position = c("left", "bottom"),
+            legend.position = c("right", "bottom"))
+
+# tmap_save(map_pesticides_counties, here("outputs", "map_pesticides_counties.png"))
+```
+
+![Pesticide use (kilograms of pesticide) by County. Data Source: [U.S. Geological Survey (USGS) Science-Base Catalog](https://www.sciencebase.gov/catalog/item/6081a924d34e8564d68661a1)](outputs/map_pesticides_counties.png)
+
+#### WNS Status & Pesticide Use by County
+
+```{r}
+wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
+  drop_na(total_pesticides_kg) %>% 
+  drop_na(wns_status)  %>% 
+  mutate(pesticides_per_sqm = total_pesticides_kg/ALAND) %>% 
+  mutate(wns_numeric = as.numeric(wns_status)) %>% 
+  mutate(pesticides_quantile = cut(pesticides_per_sqm, 
+                                  breaks = quantile(pesticides_per_sqm, 
+                                                    probs = seq(0, 1, by = 0.25), na.rm = TRUE),
+                                  labels = c("Low", "Medium", "High", "Very High")))
+
+write_sf(wns_pesticides, here("data", "wns_pesticides.shp"))
+
+chart_wns_pesticides <- ggplot(data = wns_pesticides, aes(x = wns_status, y = pesticides_per_sqm))+
+  geom_col(col = "purple")+
+  labs(x = "White-Nose Syndrome Status",
+       y = "Pesticide Use (Kg per Meter^2)",
+       title = "Pesticide Use by WNS Status")+
+  theme_bw()
+
+ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
+       width = 6, height = 3)
+```
+
+
+
+
+# NEW MAP
+
+```{r}
+# Classify the pesticide data into categories
+wns_pesticides <- wns_pesticides %>% 
+  select(wns_numeric, pesticides_quantile, county, geometry)
+
+bivariate <- bi_class(wns_pesticides, 
+                      x = wns_numeric, 
+                      y = pesticides_quantile, 
+                      style = "quantile",
+                      dim = 4) %>% 
+  drop_na()
+```
+
+```{r}
+# Set the color palette for the bivariate map
+pallet <- bi_pal("BlueOr", dim = 4) 
+
+# Define a custom palette with 16 colors (one for each bi_class)
+manual_palette <- c(
+  "1-1" = "#f7f7f7", 
+  "1-2" = "#fee8c8", 
+  "1-3" = "#fdbb84",
+  "1-4" = "#fdae61", 
+  "2-1" = "#e34a33", 
+  "2-2" = "#b30000",
+  "2-3" = "#ffffcc", 
+  "2-4" = "#d9f0a3", 
+  "3-1" = "#addd8e",
+  "3-2" = "#78c679",
+  "3-3" = "#41ab5d",
+  "3-4" = "#238443",
+  "4-1" = "#006837",
+  "4-2" = "#004529",
+  "4-3" = "#f7f7f7",
+  "4-4" = "#f7f7f8"
+)
+
+# Convert the palette to a list of 16 color values
+pallet_matrix <- matrix(pallet, nrow = 4, byrow = TRUE)
+
+# View the color palette matrix
+pallet_matrix
+
+# Create the legend for the bivariate map
+legend <- bi_legend(pal = "BlueOr",   
+                    flip_axes = FALSE,
+                    rotate_pal = FALSE,
+                    dim = 4,
+                    xlab = "Pesticide Use (kg/m^2)",
+                    ylab = "WNS Status",
+                    size = 10)
+
+# Create the legend for the bivariate map using your manual color palette
+legend <- bi_legend(pal = pallet,   
+                    flip_axes = FALSE,
+                    rotate_pal = FALSE,
+                    dim = 4,
+                    xlab = "Pesticide Use (kg/m^2)",
+                    ylab = "WNS Status",
+                    size = 10)
+```
+
+
+```{r}
+# Create the bivariate map using ggplot2
+map <- ggplot() +
+  theme_void(base_size = 14) +  
+  xlim(-125, -66) +  
+  ylim(24, 49) +  
+  
+  # Plot the bivariate data with appropriate fill color based on bivariate classes
+  geom_sf(data = bivariate, aes(fill = bi_class), 
+          color = NA, 
+          linewidth = 0.1, 
+          show.legend = TRUE) +
+  
+  # Apply the custom color palette
+  scale_fill_manual(values = manual_palette) +
+  
+  # Overlay the US state boundaries
+  geom_sf(data = us, fill = NA, color = "black", linewidth = 0.20) +
+  # Overlay the county boundaries
+  geom_sf(data = counties, fill = NA, color = "black", linewidth = 0.40) +
+  # Add labels for the map
+  labs(title = "White-Nose Syndrome and Pesticide Use in US Counties", 
+       subtitle = "Bivariate map showing WNS status and pesticide use by county",
+       caption = "Data: USGS, WNS & Pesticide Data") +
+  # Customize the appearance of the title, subtitle, and caption
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(size = 10, face = "bold", hjust = 1))
+
+# Combine the map and legend using cowplot
+library(cowplot)
+finalPlot <- ggdraw() +
+  draw_plot(map, 0, 0, 1, 1) +  # Draw the main map plot
+  draw_plot(legend, 0.05, 0.05, 0.28, 0.28)  # Draw the legend in the specified position
+
+# Display the final map with legend
+finalPlot
 ```
 
