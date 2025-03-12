@@ -240,5 +240,7 @@ finalPlot <- ggdraw() +
 
 # Display the final map with legend
 finalPlot
+
+ggsave("map.png", finalPlot, dpi = 400, width = 8.28, height = 5.12)
 ```
 
