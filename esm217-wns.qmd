@@ -259,7 +259,7 @@ tm_shape(counties, bbox = bbox)+
 
 # Works Cited
 
-Frank, E. G. (2024). The economic impacts of ecosystem disruptions: Costs from substituting biological pest control. Science, 385(6713), eadg0344.
+Frank, E. G. (2024). The economic impacts of ecosystem disruptions: Costs from substituting biological pest control. Science, 385(6713).
 
 Quarles, W. (2013). Bats, pesticides and white nose syndrome. IPM Practitioner, 33(9/10), 1-6.
 
