@@ -22,25 +22,27 @@ editor_options:
 
 # Abstract
 
-Here, we investigate the impacts to crop production from an infectious fungal disease affecting bats.The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS is a time series of categorical presence/absence data of the disease and fungus. The pesticide use data is a time series of continuous concentration data by US counties. We run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. We suggest next steps move towards incorporating public health data and running a multivariate analysis between WNS status, pesticide use, and negative health outcomes.
+In this report, we investigate the impacts to crop production from an infectious fungal disease affecting bats. The fungus *Pseudogymnoascus destructans* causes white-nose syndrome in hibernating bats and has spread across the United States. Declining bat populations are expected to have substantial impacts on the environment, specifically agriculture. Bats eat insects that damage crops and the consumption of these insects by bats saves farmers billions of dollars in pest control services annually. We map white-nose syndrome occurrence and pesticide use by county across the US. The white-nose syndrome data from USGS is a time series of categorical presence/absence data of the disease and fungus. The pesticide use data is a time series of continuous concentration data by US counties. We run a linear regression to quantify the relationship between white-nose syndrome detection and pesticide use. We suggest next steps move towards incorporating public health data and running a multivariate analysis between WNS status, pesticide use, and negative health outcomes.
 
 # Background
 
-White-nose syndrome (WNS) is a disease caused by the invasive European fungus Pseudogymnoascus destructans (Pd). Pd and WNS were first detected in the U.S. in 2007.WNS has killed off over 90% of the total populations of at least 3 species (Myotis septentrionalis, Myotis lucifugus, and Perimyotis subflavus) and heavily impacted others. Pd grows on the walls of caves, and can be spread between caves by both bats and human activity.
+White-nose syndrome (WNS) is a disease caused by the invasive European fungus *Pseudogymnoascus destructans* (Pd). Pd and WNS were first detected in the U.S. in 2007.WNS has killed off over 90% of the total populations of at least 3 species (*Myotis septentrionalis, Myotis lucifugus, and Perimyotis subflavus*) and heavily impacted others (Quarles 2013, NPS 2019). Pd grows on the walls of caves, and can be spread between caves by both bats and human activity.
 
-At the population scale, bats serve as natural pest control by eating insects that would otherwise feed on crops.Bat die-offs from WNS likely lead to increased need for pesticides. Many pesticides are linked to increased infant mortality.
+At the population scale, bats serve as natural pest control by eating insects that would otherwise feed on crops. Bats are vital to agricultural ecosystems, saving the U.S. farming industry an estimated \$3.7 billion annually in pest control costs (Frank 2024). Their decline has led to increased reliance on chemical pesticides, specifically insecticides, which can have unintended consequences for environmental and human health. Pesticide exposure has been linked to adverse health effects, including respiratory issues, neurological disorders, infant mortality, and cancer (Brainerd 2014, Dias 2023). Additionally, declining bat populations may contribute to ecosystem imbalances, increasing the risk of pest outbreaks and crop failures.
 
-Our research question: Does pesticide use increase following detection of Pd or WNS?
+Key drivers of this issue include fungal disease transmission. WNS spreads rapidly in hibernating bat colonies, which causes mass mortality events. Habitat loss and climate change also are a key driver to this problem. Environmental stressors exacerbate disease impacts and loss of habitat further limits bat population recovery. Lastly, agricultural intensification further exacerbates the problem. Reduced bat populations lead to greater pesticide dependence, increasing exposure risks for both humans and wildlife. 
+
+To address this issuse we pose the following research question: Does pesticide use increase following detection of Pd or WNS?
 
 # Methods
 
-To investigate the relationship between White-Nose Syndrome (WNS) in bats and pesticide use in agriculture, we compiled and processed datasets from the U.S. Geological Survey (USGS). WNS occurrence data was obtained at the county level, categorizing locations based on the presence of *Pseudogymnoascus destructans* (Pd) and confirmed WNS cases. Pesticide use data, available as continuous concentration estimates, was aggregated by county and standardized by land area to facilitate comparisons. These datasets were integrated with U.S. county shapefiles to ensure spatial consistency for mapping and analysis.
+To investigate the relationship between White-Nose Syndrome (WNS) in bats and pesticide use in agriculture, we compiled and processed datasets from the U.S. Geological Survey (USGS; Wieben 2021). WNS occurrence data was obtained at the county level, categorizing locations based on the presence of *Pseudogymnoascus destructans* (Pd) and confirmed WNS cases (USGS 2024). Pesticide use data, available as continuous concentration estimates, was aggregated by county and standardized by land area to facilitate comparisons. These datasets were integrated with U.S. county shapefiles to ensure spatial consistency for mapping and analysis.
 
-Data visualization played a key role in our analysis. We created a bivariate map to identify regions where both factors co-occur. This map provided a clear spatial representation of potential associations between WNS prevalence and increased pesticide application.
+Data visualization played a key role in our analysis. We created a bivariate map to identify regions where both factors co-occur. This map provided a clear spatial representation of potential associations between WNS prevalence and increased pesticide application. To quantify this relationship, we conducted a linear regression analysis, treating WNS status as the independent variable and pesticide use per square meter as the dependent variable. This allowed us to assess whether counties with higher WNS detections also exhibited increased pesticide use.
 
-To quantify this relationship, we conducted a linear regression analysis, treating WNS status as the independent variable and pesticide use per square meter as the dependent variable. This allowed us to assess whether counties with higher WNS detections also exhibited increased pesticide use.
+Through this methodological approach, we aimed to provide a comprehensive assessment of the link between WNS-related bat population declines, increased pesticide reliance, and potential consequences for both agriculture and public health. We provide potential solutions to combat this planetary health problem and suggest next steps for future research.
 
-Through this methodological approach, we aimed to provide a comprehensive assessment of the link between WNS-related bat population declines, increased pesticide reliance, and potential consequences for both agriculture and public health.
+# Results
 
 ### Data Exploration
 
@@ -77,6 +79,8 @@ counties <- read_sf(here("data", "tl_2023_us_county", "tl_2023_us_county.shp")) 
 ```
 
 #### White-Nose Syndrome and *Pseudomycan destructans* Detections by County
+
+Figure 1 shows the presence of Pd and WNS by county. The data is from the USGS and is a time series of categorical presence/absence data of the disease and fungus. The map highlights the spread of WNS across the US, starting on the east coast and now reaching counties in Washington, Oregon, and California. 
 
 ```{r wns}
 # load WNS status by county data
@@ -115,9 +119,11 @@ map_wns_counties <-   tm_shape(us, bbox = bbox)+
 tmap_save(map_wns_counties, here("outputs", "map_wns_counties.png"))
 ```
 
-![*Pseudomycan destructans* and White-Nose Syndrome Detections by County. Data Source: [U.S. Geological Survey (USGS) National Wildlife Health Center](https://www.usgs.gov/centers/nwhc/science/white-nose-syndrome)](outputs/map_wns_counties.png)
+![**Figure 1: *Pseudomycan destructans* and White-Nose Syndrome Detections by County.** Data Source: [U.S. Geological Survey (USGS) National Wildlife Health Center](https://www.usgs.gov/centers/nwhc/science/white-nose-syndrome)](outputs/map_wns_counties.png)
 
 #### Pesticide Use by County
+
+Figure 2 shows the total pesticide use (in kilograms) by county. The data is from the USGS and is a time series of continuous concentration data by US counties. The map highlights the areas of the US with the highest pesticide use, which are primarily in the Midwest.
 
 ```{r pesticides}
 pesticides_2013_2017 <- read_csv(here("data", "2013_2017_pesticides", "EPest_county_estimates_2013_2017_v2.csv")) %>% 
@@ -182,9 +188,11 @@ map_pesticides_counties <- tm_shape(us, bbox = bbox)+
 tmap_save(map_pesticides_counties, here("outputs", "map_pesticides_counties.png"))
 ```
 
-![Pesticide use (kilograms of pesticide) by County. Data Source: [U.S. Geological Survey (USGS) Science-Base Catalog](https://www.sciencebase.gov/catalog/item/6081a924d34e8564d68661a1)](outputs/map_pesticides_counties.png)
+![**Figure 2: Pesticide use (kg/m²) by County.** Data Source: [U.S. Geological Survey (USGS) Science-Base Catalog](https://www.sciencebase.gov/catalog/item/6081a924d34e8564d68661a1)](outputs/map_pesticides_counties.png)
 
 #### WNS Status & Pesticide Use by County
+
+Figure 3 highlights the relationship between WNS status and pesticide use (in kilograms per square meter). The data shows that positive detection of WNS are in counties with the most pesticide use.
 
 ```{r wns and pesticides}
 wns_pesticides <- left_join(wns_counties, pesticides, by = "COUNTYFP") %>% 
@@ -217,11 +225,11 @@ ggsave(here("outputs", "chart_wns_pesticides.png"), chart_wns_pesticides,
        width = 6, height = 3)
 ```
 
-![White-Nose Syndrome Status and Pesticide use (kg/m²). Detections of WNS are highest in counties with the most pesticide use.](outputs/chart_wns_pesticides.png)
-
-# Results
+![**Figure 3: White-Nose Syndrome Status and Pesticide use (kg/m²)**. Detections of WNS are highest in counties with the most pesticide use.](outputs/chart_wns_pesticides.png)
 
 ### Linear Regression
+
+We ran a linear regression to quantify the relationship between WNS status and pesticide use. The results show a significant positive relationship between WNS status and pesticide use, indicating that counties with higher WNS detections also exhibit increased pesticide use.
 
 ```{r regression}
 wns_pest_lm <- glm(pesticides_per_sqm ~ wns_status, data = wns_pesticides)
@@ -230,6 +238,8 @@ print(summary(wns_pest_lm))
 ```
 
 ### Bivariate Map
+
+Figure 4 shows the relationship between WNS status and pesticide use by county. The map highlights the areas of the US with the highest pesticide use and the presence of WNS, which are concentrated in the Midwest.
 
 ```{r bivariate map}
 # Classify the pesticide data into categories
@@ -309,35 +319,39 @@ map_bivar <- ggdraw() +
 ggsave(here("outputs", "map_bivar.png"), map_bivar, dpi = 400, width = 8.48, height = 5.12)
 ```
 
-![White-Nose Syndrome Status and Pesticide use by county across the US.](outputs/map_bivar.png)
+![**Figure 4: White-Nose Syndrome Status and Pesticide use by county across the US.** Associations of WNS and high pesticide use are concentrated in midwestern counties.](outputs/map_bivar.png)
 
 # Discussion
 
--   Our research question: Does pesticide use increase following detection of Pd or WNS?
+### Recommendations
 
--   Conclusion: Yes.
+Our research sought to determine whether pesticide use increases following the detection of *Pseudogymnoascus destructans* (Pd) or white-nose syndrome (WNS) in bats. Our findings suggest that this is the case. As bat populations decline due to WNS, farmers may rely more heavily on chemical pest control methods to compensate for the loss of bats as natural insect predators. This pattern highlights the ecological and economic importance of bats in agricultural systems and raises concerns about the broader environmental and human health consequences of increased pesticide use.
 
-What about solutions?
+The implications of these findings extend beyond agriculture. Pesticide exposure has been linked to respiratory issues, neurological disorders, and cancer, posing risks to both farmworkers and surrounding communities (Brainerd 2014, Diaz 2023, Frank 2024). Additionally, excessive pesticide application can disrupt ecosystems by harming non-target species, contaminating water sources, and contributing to insecticide resistance in pest populations. Given these risks, conservation strategies that protect bat populations may offer an alternative to increasing pesticide dependence.
 
--   Protect Bat Habitat
+Potential solutions to combat this planetary health problem include:
 
-    -   Conserve remaining Pd-negative caves and surrounding bat habitat.
+-   **Protect Bat Habitat:**
 
-    -   Man-made structures can be modified or built to provide Pd-free bat habitat.
+    -   Conserve Pd-negative caves and surrounding habitats to sustain healthy bat populations.
 
--   Pd Spread Prevention
+    -   Modify or construct man-made structures to provide Pd-free bat habitats.
 
-    -   Pd spread can be slowed and stopped by excluding human activity from caves.
+-   **Prevent the Spread of Pd:**
 
-    -   Caves can be inoculated against Pd with limited efficacy.
+    -   Restrict human access to caves to reduce the risk of Pd transmission.
 
--   WNS Prevention
+    -   Investigate treatments to inoculate caves against Pd, though current methods remain limited in efficacy.
 
-    -   Bats can be inoculated against WNS with limited efficacy.
+-   **Prevent the Onset of WNS in Bats:**
 
-# Next Steps
+    -   Develop and implement vaccination programs to protect bats from WNS, though these are still experimental.
 
-We suggest moving towards incorporating public health data and running a multivariate analysis between WNS status, pesticide use, and negative health outcomes.
+### Limitations & Next Steps
+
+While our analysis identifies a correlation between WNS presence and higher pesticide use, several limitations must be considered. First, correlation does not imply causation, and other factors such as changing pest populations, shifts in land use, or regional policy differences may also influence pesticide application. Second, our reliance on county-level data may obscure finer-scale patterns, and inconsistencies in pesticide reporting across states could introduce variability in our dataset. Additionally, the potential lag between WNS detection and pesticide use increases is not fully accounted for in this analysis. A longer-term study would be necessary to assess delayed effects more accurately.
+
+To build on this research, future studies should incorporate public health data to explore potential links between WNS status, pesticide use, and human health outcomes. A multivariate analysis could provide a clearer understanding of these interactions, informing conservation and agricultural policies that support both ecosystem health and public well-being. We suggest moving towards incorporating public health data and running a multivariate analysis between WNS status, pesticide use, and negative health outcomes. We attempted to incorporate public health data on infant mortality but were hindered by data availability as shown in Figure 5. Frank (2024) highlights this connection between declining bat populations, increased pesticide use, and increased cases of infant mortality.
 
 ```{r}
 # Infant Mortality
@@ -373,16 +387,22 @@ map_wns_infmort <- tm_shape(us, bbox = bbox)+
 tmap_save(map_wns_infmort, here("outputs", "map_wns_infmort.png"))
 ```
 
-![Infant Mortality Rate by County. Data Source: [U.S. Centers for Disease Control and Prevention (CDC)](https://www.cdc.gov/nchs/pressroom/nchs_press_releases/2019/20190925.htm)](outputs/map_wns_infmort.png)
+![**Figure 5: Infant Mortality Rate by County.** Data Source: [U.S. Centers for Disease Control and Prevention (CDC)](https://www.cdc.gov/nchs/pressroom/nchs_press_releases/2019/20190925.htm)](outputs/map_wns_infmort.png)
 
 # Works Cited
 
+Brainerd, E., Menon, N. (2014). Seasonal effects of water quality: The hidden costs of the Green Revolution to infant and child health in India. J. Dev. Econ. 107, 49–64. doi: 10.1016/j.jdeveco.2013.11.004
+
+Dias, M., Rocha, R., Soares, R. (2023). Down the River: Glyphosate Use in Agriculture and Birth Outcomes of Surrounding Populations. Rev. Econ. Stud. 90, 2943–2981. doi: 10.1093/restud/rdad011
+
 Frank, E. G. (2024). The economic impacts of ecosystem disruptions: Costs from substituting biological pest control. Science, 385(6713).
+
+NPS. (2019). Fungus that Causes White-nose Syndrome Confirmed in California. Available at: https://www.nps.gov/articles/fungus-that-causes-white-nose-syndrome-confirmed-in-california.htm?utm_source=article&utm_medium=website&utm_campaign=experience_more&utm_content=small 
 
 Quarles, W. (2013). Bats, pesticides and white nose syndrome. IPM Practitioner, 33(9/10), 1-6.
 
 Verant, M., & Bernard, R. F. (2023). White‐nose syndrome in bats: Conservation, management, and context‐dependent decision making. Wildlife disease and health in conservation, 273-291.
 
-Wieben, C.M., 2021, Preliminary estimated annual agricultural pesticide use for counties of the conterminous United States, 2019: U.S. Geological Survey data release, https://doi.org/10.5066/P9EDTHQL.
+Wieben, C.M. (2021). Preliminary estimated annual agricultural pesticide use for counties of the conterminous United States, 2013 - 2019: U.S. Geological Survey data release, https://doi.org/10.5066/P9EDTHQL.
 
-USGS. Where is White-nose Syndrome Now? Preliminary White-nose Syndrome Occurence by County/District of the conterminous United States. Updated December 2024.
+USGS. (2024). Where is White-nose Syndrome Now? Preliminary White-nose Syndrome Occurence by County/District of the conterminous United States. Updated December 2024.
