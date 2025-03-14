@@ -16,7 +16,6 @@ format:
     backgroundcolor: "#f6f9f3"
 editor_options: 
   chunk_output_type: console
-
 ---
 
 ![A bat suffering from White-nose syndrome, a disease caused by the fungus *Pseudomycans destructans* (commonly abbreviated as "Pd"). *Photo credit: Google Creative Commons*](bat-wns.jpeg)
@@ -27,8 +26,7 @@ Here, we investigate the impacts to crop production from an infectious fungal di
 
 # Background
 
-White-nose syndrome (WNS) is a disease caused by the invasive European fungus Pseudogymnoascus destructans (Pd). 
-Pd and WNS were first detected in the U.S. in 2007.WNS has killed off over 90% of the total populations of at least 3 species (Myotis septentrionalis, Myotis lucifugus, and Perimyotis subflavus) and heavily impacted others. Pd grows on the walls of caves, and can be spread between caves by both bats and human activity.
+White-nose syndrome (WNS) is a disease caused by the invasive European fungus Pseudogymnoascus destructans (Pd). Pd and WNS were first detected in the U.S. in 2007.WNS has killed off over 90% of the total populations of at least 3 species (Myotis septentrionalis, Myotis lucifugus, and Perimyotis subflavus) and heavily impacted others. Pd grows on the walls of caves, and can be spread between caves by both bats and human activity.
 
 At the population scale, bats serve as natural pest control by eating insects that would otherwise feed on crops.Bat die-offs from WNS likely lead to increased need for pesticides. Many pesticides are linked to increased infant mortality.
 
@@ -43,7 +41,6 @@ Data visualization played a key role in our analysis. We created a bivariate map
 To quantify this relationship, we conducted a linear regression analysis, treating WNS status as the independent variable and pesticide use per square meter as the dependent variable. This allowed us to assess whether counties with higher WNS detections also exhibited increased pesticide use.
 
 Through this methodological approach, we aimed to provide a comprehensive assessment of the link between WNS-related bat population declines, increased pesticide reliance, and potential consequences for both agriculture and public health.
-
 
 ### Data Exploration
 
@@ -312,39 +309,35 @@ map_bivar <- ggdraw() +
 ggsave(here("outputs", "map_bivar.png"), map_bivar, dpi = 400, width = 8.48, height = 5.12)
 ```
 
-
 ![White-Nose Syndrome Status and Pesticide use by county across the US.](outputs/map_bivar.png)
-
 
 # Discussion
 
-- Our research question: Does pesticide use increase following detection of Pd or WNS?
+-   Our research question: Does pesticide use increase following detection of Pd or WNS?
 
-- Conclusion: Yes.
+-   Conclusion: Yes.
 
 What about solutions?
 
-- Protect Bat Habitat
+-   Protect Bat Habitat
 
-  - Conserve remaining Pd-negative caves and surrounding bat habitat.
+    -   Conserve remaining Pd-negative caves and surrounding bat habitat.
 
-  - Man-made structures can be modified or built to provide Pd-free bat habitat.
+    -   Man-made structures can be modified or built to provide Pd-free bat habitat.
 
+-   Pd Spread Prevention
 
-- Pd Spread Prevention
+    -   Pd spread can be slowed and stopped by excluding human activity from caves.
 
-  - Pd spread can be slowed and stopped by excluding human activity from caves.
+    -   Caves can be inoculated against Pd with limited efficacy.
 
-  - Caves can be inoculated against Pd  with limited efficacy.
+-   WNS Prevention
 
-- WNS Prevention
-
-  - Bats can be inoculated against WNS with limited efficacy.
+    -   Bats can be inoculated against WNS with limited efficacy.
 
 # Next Steps
 
 We suggest moving towards incorporating public health data and running a multivariate analysis between WNS status, pesticide use, and negative health outcomes.
-
 
 ```{r}
 # Infant Mortality
@@ -381,7 +374,6 @@ tmap_save(map_wns_infmort, here("outputs", "map_wns_infmort.png"))
 ```
 
 ![Infant Mortality Rate by County. Data Source: [U.S. Centers for Disease Control and Prevention (CDC)](https://www.cdc.gov/nchs/pressroom/nchs_press_releases/2019/20190925.htm)](outputs/map_wns_infmort.png)
-
 
 # Works Cited
 
